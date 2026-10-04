@@ -1,100 +1,66 @@
 <script>
-	/** Sidebar.svelte — Left sidebar: algorithm theory and worked examples. */
+	/** Sidebar.svelte — Left rail: the selected algorithm's theory. Content only. */
 
-	let { strings, algorithm } = $props();
+	let { strings, algorithm, onglossary } = $props();
 
-	let info = $derived(strings.algoInfo[algorithm] ?? strings.algoInfo.astar);
-
-	const COLOUR_CLASS = {
-		green: 'card-green',
-		red: 'card-red',
-		blue: 'card-blue',
-		orange: 'card-orange',
-		purple: 'card-purple',
-	};
-	const ICON_CLASS = {
-		green: 'icon-green',
-		red: 'icon-red',
-		blue: 'icon-blue',
-		orange: 'icon-orange',
-		purple: 'icon-purple',
-	};
-	const PROP_ICON = {
-		green: '✓',
-		red: '✗',
-		blue: '◈',
-		orange: '~',
-		purple: '◆',
-	};
+	const info = $derived(strings.algoInfo[algorithm] ?? strings.algoInfo.astar);
+	const complexity = $derived(strings.complexity[algorithm]);
+	const ICON = { green: 'fa-check', red: 'fa-xmark', blue: 'fa-compass', orange: 'fa-circle-info', purple: 'fa-memory' };
 </script>
 
-<div class="md-body" role="region" aria-label={strings.theory}>
-	<h2>
-		<i class="fa-solid fa-route" aria-hidden="true"></i>
-		{strings.theory}
+<section class="md-body" aria-labelledby="theory-heading">
+	<h2 id="theory-heading" class="with-help">
+		<span><i class="fa-solid fa-route" aria-hidden="true"></i> {strings.theory}</span>
+		<button class="glossary-btn" onclick={() => onglossary('g')} aria-label={strings.openGlossary} title={strings.openGlossary}>?</button>
 	</h2>
 
-	<!-- Algorithm description -->
 	<h3>{info.title}</h3>
-	<p>{@html info.body.replace(/\n/g, '<br>')}</p>
+	<p>{info.body}</p>
 
-	<!-- Properties table as rule cards -->
-	{#each info.props as prop}
-		<div class="rule-card {COLOUR_CLASS[prop.colour] ?? 'card-blue'}">
-			<div class="rule-icon {ICON_CLASS[prop.colour] ?? 'icon-blue'}" aria-hidden="true">
-				{PROP_ICON[prop.colour] ?? '·'}
+	{#each info.props as prop (prop.label)}
+		<div class="rule-card card-{prop.colour}">
+			<div class="rule-icon icon-{prop.colour}" aria-hidden="true">
+				<i class="fa-solid {ICON[prop.colour]}"></i>
 			</div>
 			<div class="rule-body">
-				<h3>{prop.label}</h3>
+				<h4>{prop.label}</h4>
 				<p>{prop.value}</p>
 			</div>
 		</div>
 	{/each}
 
-	<!-- Complexity formulas -->
-	{#if algorithm === 'bfs' || algorithm === 'dfs'}
-		<div class="formula-block" aria-label="Time and space complexity">
-			T: O(V + E)&nbsp;&nbsp;&nbsp;S: O(V)
-		</div>
+	{#if complexity}
+		<h3>{strings.complexityLabel}</h3>
+		<div class="formula-block">{complexity.formula}</div>
 		<ul class="formula-desc">
-			<li><strong>V</strong> — vertices (cells) in the grid</li>
-			<li><strong>E</strong> — edges (cell adjacencies)</li>
-		</ul>
-	{:else if algorithm === 'dijkstra' || algorithm === 'astar' || algorithm === 'greedy'}
-		<div class="formula-block" aria-label="Time and space complexity">
-			T: O((V + E) log V)&nbsp;&nbsp;&nbsp;S: O(V)
-		</div>
-		<ul class="formula-desc">
-			<li><strong>V</strong> — vertices (cells)</li>
-			<li><strong>log V</strong> — from the priority queue (binary heap)</li>
-		</ul>
-	{:else if algorithm === 'idastar'}
-		<div class="formula-block" aria-label="Time and space complexity">
-			T: O(b<sup>d</sup>)&nbsp;&nbsp;&nbsp;S: O(d)
-		</div>
-		<ul class="formula-desc">
-			<li><strong>b</strong> — branching factor (≤ 4 or 8)</li>
-			<li><strong>d</strong> — depth of the optimal path</li>
-			<li><strong>S: O(d)</strong> — only the current path is stored</li>
-		</ul>
-	{:else if algorithm === 'bibfs'}
-		<div class="formula-block" aria-label="Time and space complexity">
-			T: O(b<sup>d/2</sup>)&nbsp;&nbsp;&nbsp;S: O(b<sup>d/2</sup>)
-		</div>
-		<ul class="formula-desc">
-			<li><strong>b</strong> — branching factor</li>
-			<li><strong>d/2</strong> — half depth: both frontiers meet in the middle</li>
+			{#each complexity.items as item (item)}
+				<li>{item}</li>
+			{/each}
 		</ul>
 	{/if}
 
-	<!-- Game / industry examples -->
-	{#if info.games?.length > 0}
+	{#if ['astar', 'greedy', 'idastar'].includes(algorithm)}
+		<h2>
+			<i class="fa-solid fa-compass" aria-hidden="true"></i>
+			{strings.heuristicGuideTitle}
+		</h2>
+		{#each strings.heuristicGuide as h (h.name)}
+			<div class="rule-card card-blue">
+				<div class="rule-body">
+					<h4>{h.name}</h4>
+					<p>{h.body}</p>
+				</div>
+			</div>
+		{/each}
+	{/if}
+
+	{#if info.games?.length}
 		<h2>
 			<i class="fa-solid fa-gamepad" aria-hidden="true"></i>
 			{strings.inGames}
 		</h2>
 		<div class="game-cases">
-			{#each info.games as example}
+			{#each info.games as example (example.title)}
 				<article>
 					<h4>{example.title}</h4>
 					<p>{example.body}</p>
@@ -102,46 +68,19 @@
 			{/each}
 		</div>
 	{/if}
-
-	<!-- A* heuristic comparison note -->
-	{#if algorithm === 'astar'}
-		<h2>
-			<i class="fa-solid fa-compass" aria-hidden="true"></i>
-			Choosing a heuristic
-		</h2>
-		<div class="rule-card card-blue">
-			<div class="rule-icon icon-blue" aria-hidden="true">⬛</div>
-			<div class="rule-body">
-				<h3>Manhattan (4-dir)</h3>
-				<p>|Δr| + |Δc|. Exact for 4-directional unit-cost grids. Use this by default.</p>
-			</div>
-		</div>
-		<div class="rule-card card-green">
-			<div class="rule-icon icon-green" aria-hidden="true">↗</div>
-			<div class="rule-body">
-				<h3>Octile (8-dir)</h3>
-				<p>Exact for diagonal movement where diagonals cost √2. Best accuracy for 8-dir grids.</p>
-			</div>
-		</div>
-		<div class="rule-card card-purple">
-			<div class="rule-icon icon-purple" aria-hidden="true">◆</div>
-			<div class="rule-body">
-				<h3>Chebyshev (8-dir)</h3>
-				<p>max(|Δr|, |Δc|). Exact when diagonal cost equals cardinal cost. Leads to more "staircased" paths.</p>
-			</div>
-		</div>
-		<div class="rule-card card-orange">
-			<div class="rule-icon icon-orange" aria-hidden="true">○</div>
-			<div class="rule-body">
-				<h3>Euclidean</h3>
-				<p>√(Δr² + Δc²). Admissible but not tight. Useful as a teaching comparison.</p>
-			</div>
-		</div>
-	{/if}
-</div>
+</section>
 
 <style>
-	:global(.fa-solid) {
-		font-size: 0.9em;
+	.with-help {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.formula-block {
+		white-space: pre;
+	}
+	.rule-body h4 {
+		margin: 0 0 0.15rem;
+		font-size: 0.85rem;
 	}
 </style>

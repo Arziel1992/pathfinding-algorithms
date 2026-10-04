@@ -1,12 +1,13 @@
 {
 	"name": "pathfinding-algorithms",
-	"version": "2026.10.3-1533",
+	"version": "2026.10.4-2209",
 	"private": true,
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"selftest": "node src/lib/pathfinding.selftest.js"
 	},
 	"dependencies": {
 		"svelte": "^5.57.0"

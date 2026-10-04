@@ -61,7 +61,7 @@ export function* run(
 			return;
 		}
 
-		yield { kind: "close", r: cur.r, c: cur.c };
+		yield { kind: "close", r: cur.r, c: cur.c, g: gScore.get(ck) };
 
 		for (const nb of grid.neighbors(cur.r, cur.c, diagonal)) {
 			const nk = K(nb.r, nb.c);
@@ -74,7 +74,7 @@ export function* run(
 				const f = tentativeG + h(nb.r, nb.c, end.r, end.c);
 				fScore.set(nk, f);
 				heap.push({ r: nb.r, c: nb.c, f });
-				yield { kind: "open", r: nb.r, c: nb.c };
+				yield { kind: "open", r: nb.r, c: nb.c, g: tentativeG };
 			}
 		}
 	}

@@ -49,7 +49,7 @@ export function* run(grid, start, end, { diagonal = false } = {}) {
 			return;
 		}
 
-		yield { kind: "close", r: cur.r, c: cur.c };
+		yield { kind: "close", r: cur.r, c: cur.c, g: cur.g };
 
 		for (const nb of grid.neighbors(cur.r, cur.c, diagonal)) {
 			const nk = K(nb.r, nb.c);
@@ -58,7 +58,7 @@ export function* run(grid, start, end, { diagonal = false } = {}) {
 				dist.set(nk, ng);
 				cameFrom.set(nk, { r: cur.r, c: cur.c });
 				heap.push({ r: nb.r, c: nb.c, g: ng });
-				yield { kind: "open", r: nb.r, c: nb.c };
+				yield { kind: "open", r: nb.r, c: nb.c, g: ng };
 			}
 		}
 	}

@@ -87,6 +87,56 @@
 	--syn-type: #8fe0cf;
 	--view-bg: #0e1626;
 }
+/*
+ * Grid palette, read by Canvas.svelte at draw time and by the legend, so the
+ * two can never disagree. Meaning is never carried by colour alone: the
+ * frontier also has a dot, the path is a solid line, the prediction a dashed
+ * one, S and E are lettered and mud shows its weight as a number.
+ */
+:root {
+	--cell-empty: #ffffff;
+	--cell-grid: #d5dde8;
+	--cell-wall: #1e293b;
+	--cell-mud-rgb: 146, 64, 14;
+	--cell-mud-text: #451a03;
+	--cell-mud-text-strong: #ffffff;
+	--cell-cost-text: #5b6b80;
+	--cell-g-text: #1e3a8a;
+	--cell-open: rgba(16, 185, 129, 0.3);
+	--cell-open-dot: #047857;
+	--cell-closed: rgba(37, 99, 235, 0.22);
+	--cell-open-bwd: rgba(219, 39, 119, 0.28);
+	--cell-open-bwd-dot: #9d174d;
+	--cell-closed-bwd: rgba(147, 51, 234, 0.22);
+	--cell-start: #047857;
+	--cell-start-text: #ffffff;
+	--cell-end: #b91c1c;
+	--cell-end-text: #ffffff;
+	--cell-path: #ea580c;
+	--cell-predicted: #6d28d9;
+}
+[data-theme="dark"] {
+	--cell-empty: #0e1626;
+	--cell-grid: #1e2d45;
+	--cell-wall: #64748b;
+	--cell-mud-rgb: 217, 119, 6;
+	--cell-mud-text: #fde68a;
+	--cell-mud-text-strong: #fffbeb;
+	--cell-cost-text: #a5b2c7;
+	--cell-g-text: #dbeafe;
+	--cell-open: rgba(52, 211, 153, 0.3);
+	--cell-open-dot: #6ee7b7;
+	--cell-closed: rgba(96, 165, 250, 0.28);
+	--cell-open-bwd: rgba(244, 114, 182, 0.3);
+	--cell-open-bwd-dot: #f9a8d4;
+	--cell-closed-bwd: rgba(192, 132, 252, 0.28);
+	--cell-start: #34d399;
+	--cell-start-text: #022c22;
+	--cell-end: #f87171;
+	--cell-end-text: #1f0a0a;
+	--cell-path: #fb923c;
+	--cell-predicted: #c4b5fd;
+}
 /* ================================================================ base */
 * {
 	box-sizing: border-box;
@@ -220,6 +270,17 @@ h1 {
 	font-size: 0.85rem;
 	color: var(--text-secondary);
 	margin: 0.3rem 0 0;
+}
+/* The footer version badge, as every house tool shows it. */
+.badge {
+	display: inline-block;
+	background: var(--bg-secondary);
+	border: 1px solid var(--control-border);
+	border-radius: 999px;
+	padding: 0 0.55rem;
+	font-family: var(--mono);
+	font-size: 0.66rem;
+	color: var(--text-secondary);
 }
 .md-body {
 	line-height: 1.6;

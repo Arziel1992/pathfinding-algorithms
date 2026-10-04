@@ -1,31 +1,56 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pathfinding Algorithms</title>
-    <meta
-      name="description"
-      content="An interactive visualiser for BFS, DFS, Dijkstra, A*, Greedy Best-First Search, Bidirectional BFS, and IDA* — Swinburne AI for Games (COS30002)."
-    />
-    <!-- House fonts: Inter (sans) and JetBrains Mono (mono) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
-    <!-- Font Awesome (icons used in Sidebar) -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-      integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+		<title>Pathfinding Algorithms</title>
+		<meta
+			name="description"
+			content="Interactive visualiser for BFS, DFS, Dijkstra, A*, Greedy Best-First, Bidirectional BFS and IDA* on a weighted grid: sketch the route you expect, run a search, and compare every algorithm's cost in metres."
+		/>
+		<!-- Inter (UI) and JetBrains Mono (numbers), as every house tool loads them. -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+			rel="stylesheet"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+			integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw=="
+			crossorigin="anonymous"
+			referrerpolicy="no-referrer"
+		/>
+
+		<!--
+			Theme and language before first paint, so there is no flash of the
+			wrong palette (global §9). Light first. Wrapped in try/catch because
+			localStorage throws outright in a private window with site data
+			blocked, and a tool that white-screens has failed at the one job
+			this script has. The <title> and description are swapped to the
+			active language by App.svelte once it mounts.
+		-->
+		<script>
+			(() => {
+				let theme = "light";
+				let locale = null;
+				try {
+					theme = localStorage.getItem("pathfinding-algorithms.theme") || "light";
+					locale = localStorage.getItem("pathfinding-algorithms.locale");
+				} catch {}
+				document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
+				if (locale !== "en" && locale !== "es") {
+					const browser = navigator.languages?.[0] || navigator.language || "en";
+					locale = browser.toLowerCase().startsWith("es") ? "es" : "en";
+				}
+				document.documentElement.lang = locale;
+			})();
+		</script>
+	</head>
+	<body>
+		<div id="app"></div>
+		<script type="module" src="/src/main.js"></script>
+	</body>
 </html>

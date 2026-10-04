@@ -24,7 +24,10 @@ export const meta = {
 };
 
 const FOUND = Symbol("FOUND");
-const MAX_ITERATIONS = 50_000; // safety cap for dense grids
+// ponytail: a fixed expansion cap keeps an animated run finite; weighted grids
+// have many distinct f-values, so IDA* can need more. Raise it, or add a
+// transposition table, if a scene genuinely needs IDA* to finish there.
+export const MAX_ITERATIONS = 50_000;
 
 /**
  * @param {import('../Grid.js').Grid} grid
@@ -37,7 +40,7 @@ export function* run(
 	grid,
 	start,
 	end,
-	{ diagonal = false, heuristic = "manhattan" } = {},
+	{ diagonal = false, heuristic = "manhattan", limit = MAX_ITERATIONS } = {},
 ) {
 	const K = (r, c) => r * 10000 + c;
 	const h = heuristics[heuristic] ?? heuristics.manhattan;
@@ -63,21 +66,27 @@ export function* run(
 			diagonal,
 			() => {
 				iterations++;
-				return iterations < MAX_ITERATIONS;
+				return iterations < limit;
 			},
 		);
 
 		if (result === FOUND) return;
-		if (result === Infinity) {
-			yield { kind: "fail" };
+		// The cap is checked first: hitting it also unwinds as Infinity, and
+		// reporting that as "no path" told learners a reachable goal was
+		// unreachable. Giving up is its own outcome.
+		if (iterations >= limit) {
+			yield { kind: "fail", reason: "limit", limit };
 			return;
 		}
-		if (iterations >= MAX_ITERATIONS) {
+		if (result === Infinity) {
 			yield { kind: "fail" };
 			return;
 		}
 
 		threshold = result;
+		// Each pass starts from scratch; the view clears so the deeper bound
+		// is visible, and the re-expansion is the cost IDA* pays for O(d) memory.
+		yield { kind: "iteration", threshold };
 		pathSet.clear();
 		pathSet.add(K(start.r, start.c));
 		pathList.length = 0;
@@ -103,7 +112,7 @@ function* search(
 	if (f > threshold) return f;
 	if (!tick()) return Infinity;
 
-	yield { kind: "close", r: cur.r, c: cur.c };
+	yield { kind: "close", r: cur.r, c: cur.c, g };
 
 	if (cur.r === end.r && cur.c === end.c) {
 		yield { kind: "path", nodes: pathList.map((p) => ({ r: p.r, c: p.c })) };
@@ -118,7 +127,7 @@ function* search(
 
 		pathSet.add(nk);
 		pathList.push({ r: nb.r, c: nb.c });
-		yield { kind: "open", r: nb.r, c: nb.c };
+		yield { kind: "open", r: nb.r, c: nb.c, g: g + nb.cost };
 
 		const t = yield* search(
 			grid,

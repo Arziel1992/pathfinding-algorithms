@@ -1,20 +1,25 @@
 /**
- * @file en.js — Australian English strings.
- * Every user-visible string lives here. Nothing is hardcoded in components.
+ * @file en.js — Australian English strings, the baseline locale.
+ * Every learner-visible string lives here; `{name}` placeholders are filled by
+ * `fmt()` in App.svelte. Not translated: E. Ketterer, unit codes, the version,
+ * and mathematical notation.
  */
 
 export default {
 	// App shell
 	title: "Pathfinding Algorithms",
 	tagline:
-		"Visualise how search algorithms explore a grid — AI for Games · COS30002",
+		"Watch seven search algorithms explore the same grid, and predict the route first.",
 	description:
-		"An interactive visualiser for Breadth-First Search, Depth-First Search, Dijkstra, A*, Greedy Best-First Search, Bidirectional BFS, and IDA*.",
-	skipToMain: "Skip to main content",
-	toggleTheme: "Toggle dark/light theme",
-	toggleLocale: "Cambiar a Español",
-	toggleSidebarLeft: "Toggle theory sidebar",
-	toggleSidebarRight: "Toggle controls sidebar",
+		"Interactive visualiser for BFS, DFS, Dijkstra, A*, Greedy Best-First, Bidirectional BFS and IDA* on a weighted grid: sketch the route you expect, run a search, and compare every algorithm's cost in metres.",
+	skipToMain: "Skip to the grid",
+	toolbarLabel: "Tool settings",
+	manualButton: "Manual",
+	languageLabel: "Language",
+	themeToggle: "Dark theme",
+	toggleSidebarLeft: "Show or hide the theory panel",
+	toggleSidebarRight: "Show or hide the controls panel",
+	openGlossary: "Open the manual at this topic",
 
 	// Algorithm names
 	algoNames: {
@@ -27,136 +32,246 @@ export default {
 		idastar: "IDA* (Iterative Deepening A*)",
 	},
 
-	// Heuristic names
 	heuristicNames: {
 		manhattan: "Manhattan",
 		euclidean: "Euclidean",
 		chebyshev: "Chebyshev",
 		octile: "Octile",
 	},
+	heuristicWarning:
+		"Manhattan overestimates once diagonal moves are allowed: it counts a √2 m diagonal step as 2 m. A* may then miss the cheapest route. Try Octile.",
 
 	// Controls
 	controls: "Controls",
 	algorithm: "Algorithm",
 	heuristic: "Heuristic",
+	options: "Options",
 	speed: "Speed",
-	speedSlow: "Slow",
-	speedFast: "Fast",
+	speedValue: "{ms} ms per step",
 	diagonal: "Allow diagonal movement",
+	showCosts: "Show edge costs",
+	showCostsHint:
+		"Corner: the cost of a move into that cell. Centre: g, the cheapest cost found so far from S, in metres (Dijkstra, A*, IDA*).",
+	cellG: "g = {g} m",
 	drawMode: "Draw mode",
 	modes: {
+		predict: "Predict route",
 		wall: "Wall",
+		weight: "Mud (weight)",
 		erase: "Erase",
-		weight: "Weight",
-		start: "Move Start",
-		end: "Move End",
+		start: "Move start",
+		end: "Move end",
 	},
-	showWeightMode: "Show weight mode",
-	weightLevel: "Weight level",
-	maze: "Maze generator",
+	weightLevel: "Mud weight",
+	weightHint: "Entering a mud cell costs its weight times the step length.",
+	maze: "Generate a grid",
+	mazeDemo: "Demo scene",
 	mazeRandom: "Random walls",
-	mazeRecursive: "Recursive backtracker",
-	actions: "Actions",
+	mazeRecursive: "Maze",
+	mazeCosts: "Randomise costs",
+	actions: "Run",
 	play: "Play",
 	pause: "Pause",
 	step: "Step",
 	stop: "Stop",
-	clearPath: "Clear path",
-	clearAll: "Clear all",
+	clearPath: "Clear search",
+	clearAll: "Clear grid",
+
+	// Prediction
+	predictTitle: "Your prediction",
+	predictHint:
+		"Choose Predict route, trace from S to E, then press Play. The run scores your route.",
+	predictDrawn: "Route sketched: {n} cells. Press Play to check it.",
+	predictClear: "Clear prediction",
+	predictReasons: {
+		empty: "Your route is empty — start it on S.",
+		start: "Your route must begin on S.",
+		end: "Your route stops before E (at row {r}, column {c}).",
+		wall: "Your route crosses a wall at row {r}, column {c}.",
+		gap: "Your route jumps a cell at row {r}, column {c}.",
+	},
+	predictCost: "Your route costs {cost} m.",
+	predictOptimal: "That is the cheapest possible route.",
+	predictAbove: "The cheapest route costs {best} m — yours is {pct}% dearer.",
+	predictOverlap: "{pct}% of your route lies on the path this algorithm found.",
 
 	// Telemetry
 	telemetry: "Run metrics",
 	status: "Status",
 	statuses: {
-		idle: "Idle — draw a maze and press Play",
+		idle: "Ready — sketch a prediction, then press Play",
 		running: "Running…",
 		paused: "Paused",
-		done: "Done — path found",
+		done: "Path found",
 		noPath: "No path exists",
+		gaveUp: "Gave up after {n} expansions — not proof that no path exists",
 	},
-	visited: "Nodes visited",
-	pathLength: "Path length",
-	elapsed: "Time elapsed",
-	ms: "ms",
-	cells: "cells",
+	expanded: "Nodes expanded",
+	frontier: "Frontier size",
+	pathCost: "Path cost",
+	pathSteps: "Path steps",
+	bestCost: "Cheapest possible",
+	optimalYes: "optimal",
+	optimalNo: "{pct}% above",
+	threshold: "IDA* cost bound",
+	metres: "m",
+	scale: "Scale: 1 cell = {m} m. Diagonal steps cost √2 × the weight.",
+
+	// Compare
+	compareAll: "Compare all algorithms",
+	compareTitle: "Same grid, every algorithm",
+	compareCaption: "Cost in metres; the cheapest is {best} m.",
+	colAlgo: "Algorithm",
+	colExpanded: "Expanded",
+	colCost: "Cost (m)",
+	colOptimal: "Cheapest?",
+	yes: "Yes",
+	no: "No",
+	none: "none",
+	gaveUp: "gave up",
 
 	// Legend
 	legend: "Legend",
-	legendStart: "Start",
-	legendEnd: "End",
+	legendStart: "Start (S)",
+	legendEnd: "End (E)",
 	legendWall: "Wall",
-	legendWeight: "Weight (2–9)",
-	legendOpen: "Frontier (open set)",
-	legendClosed: "Visited (closed set)",
-	legendPath: "Shortest path",
-	legendBwdOpen: "Backward frontier",
-	legendBwdClosed: "Backward visited",
+	legendWeight: "Mud — the number is its weight",
+	legendOpen: "Frontier (open set), with a dot",
+	legendClosed: "Expanded (closed set)",
+	legendPath: "Path found (solid line)",
+	legendPredicted: "Your predicted route (dashed line)",
+	legendBwdOpen: "Backward frontier (bidirectional)",
+	legendBwdClosed: "Backward expanded (bidirectional)",
 
-	// Keyboard hints
+	// Grid and keyboard
+	canvasLabel:
+		"Search grid, {rows} rows by {cols} columns. Arrow keys move the cursor; Enter applies the draw mode.",
+	cursorAt: "Row {r}, column {c}: {what}",
+	cellKinds: {
+		empty: "open ground",
+		wall: "wall",
+		weight: "mud, weight {w}",
+		start: "start",
+		end: "end",
+	},
 	kbHint:
-		"Click/drag to paint · R right-click to erase · Space to play/pause · S to step",
+		"Drag to draw · right-drag erases · on the grid: arrows + Enter · Space play/pause · S step",
 
 	// Sidebar — theory
 	theory: "Theory",
 	inGames: "In games",
+	complexityLabel: "Time and space complexity",
+	complexity: {
+		bfs: {
+			formula: "T: O(V + E)   S: O(V)",
+			items: ["V — cells in the grid", "E — moves between neighbouring cells"],
+		},
+		dfs: {
+			formula: "T: O(V + E)   S: O(V)",
+			items: ["V — cells in the grid", "E — moves between neighbouring cells"],
+		},
+		dijkstra: {
+			formula: "T: O((V + E) log V)   S: O(V)",
+			items: ["V — cells", "log V — the binary-heap priority queue"],
+		},
+		astar: {
+			formula: "T: O((V + E) log V)   S: O(V)",
+			items: [
+				"Worst case as Dijkstra; a good heuristic expands far fewer cells",
+				"log V — the binary-heap priority queue",
+			],
+		},
+		greedy: {
+			formula: "T: O((V + E) log V)   S: O(V)",
+			items: ["V — cells", "log V — the priority queue ordered by h alone"],
+		},
+		bibfs: {
+			formula: "T: O(b^(d/2))   S: O(b^(d/2))",
+			items: [
+				"b — branching factor (4 or 8 here)",
+				"d/2 — each frontier only searches half the depth",
+			],
+		},
+		idastar: {
+			formula: "T: O(b^d)   S: O(d)",
+			items: [
+				"b — branching factor; d — depth of the cheapest path",
+				"S: O(d) — only the current path is stored, so cells are re-expanded every pass",
+			],
+		},
+	},
+	heuristicGuideTitle: "Choosing a heuristic",
+	heuristicGuide: [
+		{
+			name: "Manhattan — |Δr| + |Δc|",
+			body: "The true distance on an empty 4-direction grid. Overestimates with diagonals, so not admissible there.",
+		},
+		{
+			name: "Octile",
+			body: "The true distance on an empty 8-direction grid where a diagonal costs √2. The best choice with diagonals on.",
+		},
+		{
+			name: "Chebyshev — max(|Δr|, |Δc|)",
+			body: "Exact only if a diagonal cost 1. Here it costs √2, so Chebyshev underestimates: still admissible, but A* expands more.",
+		},
+		{
+			name: "Euclidean — √(Δr² + Δc²)",
+			body: "Straight-line distance. Always admissible on this grid, never tighter than Octile.",
+		},
+	],
 	algoInfo: {
 		bfs: {
 			title: "Breadth-First Search",
-			body: `BFS explores every node at the current "depth" before moving deeper.
-It uses a FIFO queue: nodes are processed in the exact order they are discovered.
-In an unweighted grid, this guarantees the path with the fewest edges —
-the classic "shortest hop count" result used in network routing and tile maps.`,
+			body: "BFS expands every cell one step away, then every cell two steps away, and so on, using a first-in, first-out queue. It finds the route with the fewest steps — which is the cheapest route only when every step costs the same. Add mud or allow diagonals and compare its cost with Dijkstra's.",
 			props: [
-				{ label: "Optimal", value: "Yes — fewest hops", colour: "green" },
+				{
+					label: "Cheapest route",
+					value: "Only if every step costs the same",
+					colour: "orange",
+				},
 				{ label: "Complete", value: "Yes", colour: "green" },
 				{ label: "Weights", value: "Ignored", colour: "orange" },
 				{ label: "Heuristic", value: "None", colour: "orange" },
 			],
 			games: [
 				{
-					title: "Tile-map pathfinding",
-					body: 'BFS underlies flood-fill and paint-bucket tools. It is also used for "can this unit reach that tile?" reachability checks in turn-based strategy games.',
+					title: "Movement range",
+					body: "Turn-based tactics games show which tiles a unit can reach in N moves: a BFS from the unit, stopped at depth N.",
 				},
 				{
-					title: "NavMesh seeding",
-					body: 'BFS from the player\'s position seeds which NavMesh regions are reachable, powering the "show reachable tiles" UI in games like Into the Breach.',
+					title: "Flood fill",
+					body: 'The paint-bucket tool and "which rooms connect?" checks are BFS over neighbouring cells.',
 				},
 			],
 		},
 		dfs: {
 			title: "Depth-First Search",
-			body: `DFS commits to one branch and follows it as deep as possible before backtracking.
-It uses a LIFO stack (or recursion). The path it finds is rarely the shortest —
-it depends entirely on the order neighbours are explored.
-DFS is primarily used for maze generation, cycle detection, and topological sort.`,
+			body: "DFS follows one branch as far as it can before backing up, using a last-in, first-out stack. The route it returns depends on the order it tries neighbours, and is rarely the shortest. Its strength is visiting everything reachable with very little bookkeeping.",
 			props: [
-				{ label: "Optimal", value: "No — path may be longer", colour: "red" },
-				{ label: "Complete", value: "Yes (finite graphs)", colour: "green" },
+				{ label: "Cheapest route", value: "No", colour: "red" },
+				{ label: "Complete", value: "Yes, on a finite grid", colour: "green" },
 				{ label: "Weights", value: "Ignored", colour: "orange" },
 				{ label: "Heuristic", value: "None", colour: "orange" },
 			],
 			games: [
 				{
 					title: "Maze generation",
-					body: "Recursive backtracker (DFS + random neighbour order) is the most common maze-generation algorithm in procedural dungeon games.",
+					body: "The recursive backtracker — DFS with neighbours in random order — carves the Maze button's mazes.",
 				},
 				{
-					title: "Graph colouring",
-					body: 'DFS-based graph colouring partitions a level into "zones" for AI area awareness without the overhead of a full pathfinder.',
+					title: "Connected regions",
+					body: "Labelling which areas of a level connect lets an AI skip a search towards a region it can never reach.",
 				},
 			],
 		},
 		dijkstra: {
 			title: "Dijkstra's Algorithm",
-			body: `Dijkstra's algorithm expands the node with the lowest accumulated cost (g).
-Unlike BFS, it respects edge weights — heavier terrain costs more to traverse.
-It is essentially A* with a zero heuristic, so it expands outward uniformly
-in all directions until the goal is reached.`,
+			body: "Dijkstra always expands the frontier cell with the lowest cost so far, g. Unlike BFS it pays attention to cost, so it walks around mud when that is cheaper. It is A* with h = 0: it spreads out evenly in every direction until it reaches the goal.",
 			props: [
-				{ label: "Optimal", value: "Yes — lowest cost", colour: "green" },
+				{ label: "Cheapest route", value: "Yes", colour: "green" },
 				{
 					label: "Complete",
-					value: "Yes (non-negative weights)",
+					value: "Yes, with non-negative weights",
 					colour: "green",
 				},
 				{ label: "Weights", value: "Respected", colour: "green" },
@@ -164,160 +279,184 @@ in all directions until the goal is reached.`,
 			],
 			games: [
 				{
-					title: "Terrain cost pathfinding",
-					body: "Strategy games assign movement costs per terrain type (forest = 2, road = 1). Dijkstra returns the minimum-cost path, not minimum-hop.",
+					title: "Terrain costs",
+					body: "Strategy games give terrain a movement cost (forest 2, road 1). Dijkstra returns the cheapest route, not the shortest.",
 				},
 				{
-					title: "NavMesh edge weights",
-					body: "Unreal Engine and Unity NavMesh agents use Dijkstra-like cost accumulation when area modifiers (mud, water, crowd density) are applied.",
+					title: "Distance maps",
+					body: 'One Dijkstra run from a point gives the cost to every cell. Roguelike developers call these "Dijkstra maps" and use them to drive many monsters at once.',
 				},
 			],
 		},
 		astar: {
 			title: "A* Algorithm",
-			body: `A* combines the cost paid so far (g) with a heuristic estimate of the remaining cost (h).
-f = g + h.  By choosing an admissible heuristic (one that never overestimates),
-A* is guaranteed optimal while visiting far fewer nodes than Dijkstra.
-It is the industry-standard pathfinding algorithm in commercial games.`,
+			body: "A* expands the frontier cell with the lowest f = g + h: the cost paid so far plus a heuristic guess of the cost still to go. With an admissible heuristic (one that never overestimates) it still finds the cheapest route, while expanding far fewer cells than Dijkstra.",
 			props: [
-				{ label: "Optimal", value: "Yes — with admissible h", colour: "green" },
+				{
+					label: "Cheapest route",
+					value: "Yes, with an admissible h",
+					colour: "green",
+				},
 				{ label: "Complete", value: "Yes", colour: "green" },
 				{ label: "Weights", value: "Respected", colour: "green" },
-				{
-					label: "Heuristic",
-					value: "Manhattan / Euclidean / Chebyshev / Octile",
-					colour: "blue",
-				},
+				{ label: "Heuristic", value: "g + h", colour: "blue" },
 			],
 			games: [
 				{
-					title: "NPC navigation",
-					body: "Every major game engine (Unreal, Unity, Godot) uses A* or a variant in its NavMesh pathfinder. The octile heuristic is the standard choice for tile grids with diagonal movement.",
+					title: "Navigation meshes",
+					body: "Game engines plan agent routes with A* over a navigation mesh, a graph of walkable polygons, rather than over a grid of cells.",
 				},
 				{
-					title: "Real-time strategy",
-					body: "StarCraft, Age of Empires, and Warcraft III all used A* variants. Flow fields (used in Planetary Annihilation) pre-compute an A* gradient for the entire map.",
+					title: "Tile grids",
+					body: "On 8-direction tile grids, Octile is the usual heuristic, because it is the exact distance when nothing is in the way.",
 				},
 			],
 		},
 		greedy: {
 			title: "Greedy Best-First Search",
-			body: `Greedy BFS always expands the node that looks closest to the goal — it uses h(n) alone,
-ignoring the cost paid so far. This makes it very fast in open spaces, but it can
-be fooled by a heuristic that points toward a wall, producing non-optimal or very
-long paths. Compare its visited count with A*'s to see the trade-off.`,
+			body: "Greedy expands the cell that looks closest to the goal, using h alone and ignoring the cost paid so far. It is fast in open space, but a wall between it and the goal can lead it into a dead end, and the route it returns can be far from the cheapest. Compare its expanded count and cost with A*'s.",
 			props: [
+				{ label: "Cheapest route", value: "No", colour: "red" },
 				{
-					label: "Optimal",
-					value: "No — can find longer paths",
-					colour: "red",
+					label: "Complete",
+					value: "Yes on a finite grid, as implemented here",
+					colour: "green",
 				},
-				{ label: "Complete", value: "Not guaranteed", colour: "red" },
 				{ label: "Weights", value: "Ignored", colour: "orange" },
-				{ label: "Heuristic", value: "h(n) only", colour: "blue" },
+				{ label: "Heuristic", value: "h only", colour: "blue" },
 			],
 			games: [
 				{
-					title: 'Approximate "line to target"',
-					body: "Greedy BFS is sometimes used in RTS games for very short-range chase behaviour when exact optimality is not required and speed matters.",
+					title: "Good-enough routes",
+					body: "Where a plausible route matters more than the cheapest one, a greedy search finishes sooner and expands fewer cells.",
 				},
 			],
 		},
 		bibfs: {
 			title: "Bidirectional BFS",
-			body: `Two BFS frontiers expand simultaneously — one from the start, one from the goal.
-When they meet, the path is assembled from both halves. In open grids the combined
-frontier is roughly b^(d/2) nodes, compared to b^d for single-directional BFS.
-Watch the two coloured frontiers close in on each other.`,
+			body: "Two breadth-first searches run at once, one from the start and one from the end, a level at a time. When they touch, the route is joined from both halves. On an open grid each frontier only needs half the depth, so far fewer cells are expanded. Like BFS, it counts steps, not cost.",
 			props: [
-				{ label: "Optimal", value: "Yes — fewest hops", colour: "green" },
+				{
+					label: "Cheapest route",
+					value: "Only if every step costs the same",
+					colour: "orange",
+				},
 				{ label: "Complete", value: "Yes", colour: "green" },
 				{ label: "Weights", value: "Ignored", colour: "orange" },
 				{ label: "Heuristic", value: "None", colour: "orange" },
 			],
 			games: [
 				{
-					title: "Two-way road graphs",
-					body: "GPS navigation systems use bidirectional Dijkstra (the weighted variant) to plan routes on road networks with millions of nodes.",
+					title: "Route planning",
+					body: "Planners on large road graphs search from both ends at once — the weighted version is bidirectional Dijkstra — to shrink the explored area.",
 				},
 			],
 		},
 		idastar: {
 			title: "IDA* (Iterative Deepening A*)",
-			body: `IDA* performs depth-first searches bounded by a cost threshold that starts at h(start)
-and increases each iteration to the lowest f-value that exceeded the previous bound.
-Memory usage is O(d) — only the current path is stored — making it ideal for
-very large search spaces where A*'s open list would be enormous.`,
+			body: "IDA* runs depth-first passes that stop wherever f = g + h exceeds a bound. The first bound is h(start); each pass raises it to the smallest f that went over. Only the current path is kept, so memory is tiny — but every pass re-expands the cells before it, which is why the count climbs so fast here.",
 			props: [
-				{ label: "Optimal", value: "Yes — with admissible h", colour: "green" },
-				{ label: "Complete", value: "Yes", colour: "green" },
+				{
+					label: "Cheapest route",
+					value: "Yes, with an admissible h",
+					colour: "green",
+				},
+				{
+					label: "Complete",
+					value: "Yes, given time; this tool stops at 50,000 expansions",
+					colour: "orange",
+				},
 				{ label: "Weights", value: "Respected", colour: "green" },
-				{ label: "Heuristic", value: "h(n), same as A*", colour: "blue" },
-				{ label: "Memory", value: "O(d) — very low", colour: "purple" },
+				{
+					label: "Memory",
+					value: "O(d) — the current path only",
+					colour: "purple",
+				},
 			],
 			games: [
 				{
 					title: "Puzzle solvers",
-					body: "IDA* was the first algorithm to optimally solve the 15-puzzle in real time. It is used in combinatorial game AI where the state space is enormous.",
+					body: "Korf (1985) introduced IDA* and used it to find optimal solutions to random instances of the 15-puzzle, where A*'s open list would not fit in memory.",
 				},
 			],
 		},
 	},
 
-	// Glossary
-	glossaryTitle: "Glossary",
-	glossaryClose: "Close glossary",
-	glossary: [
-		{
-			term: "Open set (frontier)",
-			def: "The set of discovered nodes not yet fully explored. BFS uses a queue; Dijkstra and A* use a priority queue.",
+	// Manual and glossary (the shared Glossary.svelte reads these keys)
+	glossaryTitle: "Manual and glossary",
+	glossaryClose: "Close",
+	glossaryFooter:
+		"Every cost in this tool is in metres; one cell is 1 m across.",
+	glossGroups: {
+		use: "Using the tool",
+		search: "Search",
+		cost: "Cost",
+	},
+	gloss: {
+		manual: {
+			title: "How to use this tool",
+			body: "Pick an algorithm on the right. Sketch the route you expect from S to E with Predict route, then press Play or Step: the grid shows which cells the search expands, and the panel under the grid scores your route.\nEdit the grid with walls and mud, move S and E, or generate a scene, then press Compare all algorithms to see every search on the same grid.",
 		},
-		{
-			term: "Closed set (visited)",
-			def: "Nodes that have been fully processed and whose optimal cost is known. They are never re-expanded.",
+		keys: {
+			title: "Keyboard and mouse",
+			body: "Drag on the grid to draw with the current mode; right-drag erases.\nWith the grid focused, the arrow keys move a cursor and Enter draws at it; the cursor's cell is read out. Space plays or pauses, S steps one expansion, R clears the search.",
 		},
-		{
-			term: "g(n)",
-			def: "The exact cost of the cheapest known path from the start node to n.",
+		predict: {
+			title: "Predicting a route",
+			body: "Predict route draws your guess as a dashed line, starting from S. When the search finishes, the tool checks that your route is legal — starts on S, ends on E, never jumps a cell or crosses a wall — then compares its cost with the cheapest possible, and says how much of it the algorithm's path shares.",
 		},
-		{
-			term: "h(n)",
-			def: "The heuristic estimate of the cost from n to the goal. Must be admissible (never overestimate) for A* to be optimal.",
+		compare: {
+			title: "Comparing algorithms",
+			body: "Compare all algorithms runs every search on the grid as it is, without animating. It lists the cells each one expanded, the cost of the route it found, and whether that route is the cheapest — checked against Dijkstra, which is always optimal with non-negative costs.",
 		},
-		{
-			term: "f(n) = g(n) + h(n)",
-			def: "A*'s priority key. Nodes with the lowest f are expanded first.",
+		costs: {
+			title: "Edge costs",
+			body: "A move's cost is the weight of the cell it enters, times 1 for a straight step or √2 for a diagonal one. Show edge costs prints that weight in each cell's corner, and, as Dijkstra, A* or IDA* reach a cell, its g value in the centre.\nRandomise costs gives every open cell a weight from 1 to 9. With every move priced differently, the route with the fewest steps (BFS) and the cheapest route (Dijkstra, A*) come apart.",
 		},
-		{
-			term: "Admissible heuristic",
-			def: "A heuristic that never overestimates the true cost to the goal. Manhattan distance is admissible for 4-directional unit-cost grids.",
+		open: {
+			title: "Open set (frontier)",
+			body: "Cells discovered but not yet expanded, drawn with a dot. BFS keeps them in a queue; Dijkstra and A* in a priority queue.",
 		},
-		{
-			term: "Optimal",
-			def: "An algorithm is optimal if it always finds the lowest-cost path when one exists.",
+		closed: {
+			title: "Closed set (expanded)",
+			body: "Cells already expanded. With a consistent heuristic, Dijkstra and A* never need to expand one again.",
 		},
-		{
-			term: "Complete",
-			def: "An algorithm is complete if it always finds a path when one exists.",
+		g: {
+			title: "g(n)",
+			body: "The cost in metres of the cheapest route found so far from the start to n. It can fall while n waits in the frontier, when a cheaper way in is found.",
 		},
-		{
-			term: "Cell weight",
-			def: "A movement cost multiplier applied when entering a cell. Unweighted algorithms (BFS, DFS, Greedy) treat all walkable cells as cost 1.",
+		h: {
+			title: "h(n)",
+			body: "A heuristic estimate, in metres, of the cost from n to the goal.",
 		},
-		{
-			term: "Diagonal movement",
-			def: "When enabled, agents may move in 8 directions. Diagonal steps cost √2 ≈ 1.414 × the cell weight. The Octile and Chebyshev heuristics are exact for this case.",
+		f: {
+			title: "f(n) = g(n) + h(n)",
+			body: "A*'s priority: the cell with the lowest f is expanded next.",
 		},
-		{
-			term: "NavMesh",
-			def: "A navigation mesh — a walkability graph of the level used by game engines. A* typically runs on NavMesh edges rather than on a raw grid.",
+		admissible: {
+			title: "Admissible heuristic",
+			body: "One that never overestimates the true remaining cost. A* with an admissible h always returns the cheapest route.",
 		},
-	],
+		optimal: {
+			title: "Cheapest (optimal)",
+			body: "A route is optimal when no other route from S to E costs less.",
+		},
+		complete: {
+			title: "Complete",
+			body: "An algorithm is complete if it always finds a route when one exists.",
+		},
+		mud: {
+			title: "Mud (cell weight)",
+			body: "A cost multiplier for entering a cell. BFS, DFS, Greedy and Bidirectional BFS ignore it.",
+		},
+		metre: {
+			title: "Metre",
+			body: "This tool's unit of cost: one cell is 1 m across, so a straight step onto open ground costs 1 m and a diagonal step √2 ≈ 1.414 m.",
+		},
+	},
 
 	// Attribution
-	attribution: "Made with ❤️ for Swinburne — AI for Games — By E. Ketterer",
 	footerMadeWith: "Made with ❤️ for Swinburne",
-	footerSubject: "AI for Games",
-	version: "v",
-	source: "Source",
+	footerSubject: "Pathfinding",
+	versionTitle: "Version: the date and time of this release",
 };

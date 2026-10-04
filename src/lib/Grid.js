@@ -105,19 +105,4 @@ export class Grid {
 		this._walls.clear();
 		this._weights.clear();
 	}
-
-	/** Remove only walls (keep weights). */
-	clearWalls() {
-		this._walls.clear();
-	}
-
-	/** Remove only weights (keep walls). */
-	clearWeights() {
-		this._weights.clear();
-	}
-
-	/** @returns {boolean} */
-	hasWeight(r, c) {
-		return this._weights.has(Grid.key(r, c));
-	}
 }

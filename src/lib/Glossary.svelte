@@ -1,119 +1,231 @@
 <script>
-	/** Glossary.svelte — Modal dialog listing all algorithm and grid terms. */
+	/**
+	 * Glossary.svelte — the house "Manual and glossary": contents on the left,
+	 * entries on the right, opened at a section by the "?" buttons.
+	 *
+	 * SHARED FILE (shell: house). Byte-identical in Templates/svelte-app and in
+	 * every tool whose catalogue record says `shell: house`;
+	 * Scripts/check_conformance.py fails a tool whose copy differs. Change it
+	 * here, in the template, then copy it to the tools.
+	 *
+	 * Everything a tool supplies is data: `groups` is [[groupId, [entryId…]]…]
+	 * in reading order, and the locale strings hold glossaryTitle,
+	 * glossaryClose, glossaryFooter, glossGroups.<groupId> and
+	 * gloss.<entryId>.title / .body (a "\n" in a body starts a paragraph).
+	 *
+	 * ponytail: a native <dialog> opened with showModal() — the browser supplies
+	 * the focus containment, Esc to close and the inert background. Focus
+	 * returns to whatever opened it.
+	 */
+	let { strings, groups, isOpen = $bindable(false), section = $bindable('') } = $props();
 
-	let { strings, open = $bindable(false) } = $props();
-
-	let dialog = $state(null);
+	let dialog = $state();
+	let content = $state();
+	let opener = null;
 
 	$effect(() => {
 		if (!dialog) return;
-		if (open) {
+		if (isOpen && !dialog.open) {
+			opener = document.activeElement;
 			dialog.showModal();
-		} else {
+			queueMicrotask(() => jump(section || groups[0][1][0]));
+		} else if (!isOpen && dialog.open) {
 			dialog.close();
 		}
 	});
 
-	function handleClose() {
-		open = false;
+	function jump(id) {
+		section = id;
+		const entry = content?.querySelector(`#g-${id}`);
+		if (entry) content.scrollTop = entry.offsetTop - content.offsetTop - 16;
 	}
 
-	function handleBackdropClick(e) {
-		if (e.target === dialog) open = false;
+	function closed() {
+		isOpen = false;
+		opener?.focus?.();
 	}
 
-	function handleKeydown(e) {
-		if (e.key === 'Escape') open = false;
+	/** A click on the dimmed page behind closes it; keyboard users have Esc and Close. */
+	function onBackdrop(event) {
+		if (event.target !== dialog) return;
+		const box = dialog.getBoundingClientRect();
+		const inside = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom;
+		if (!inside) dialog.close();
 	}
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<dialog
-	bind:this={dialog}
-	class="modal-content"
-	aria-label={strings.glossaryTitle}
-	onclick={handleBackdropClick}
-	onkeydown={handleKeydown}
-	onclose={handleClose}
->
-	<div class="glossary-inner">
-		<div class="glossary-head">
-			<h2>{strings.glossaryTitle}</h2>
-			<button
-				class="close-btn"
-				onclick={handleClose}
-				aria-label={strings.glossaryClose}
-			>✕</button>
-		</div>
-
-		<ul class="glossary-list" role="list">
-			{#each strings.glossary as entry}
-				<li>
-					<dt class="term">{entry.term}</dt>
-					<dd class="def">{entry.def}</dd>
-				</li>
+<dialog bind:this={dialog} class="modal-content" aria-labelledby="glossary-title" onclose={closed} onclick={onBackdrop}>
+	<div class="layout">
+		<nav class="toc" aria-labelledby="glossary-title">
+			<h2 id="glossary-title">{strings.glossaryTitle}</h2>
+			<div class="toc-scroll">
+				{#each groups as [group, ids] (group)}
+					<p class="group">{strings.glossGroups[group]}</p>
+					<ul>
+						{#each ids as id (id)}
+							<li>
+								<button type="button" class:active={section === id} aria-current={section === id ? 'true' : undefined} onclick={() => jump(id)}>
+									{strings.gloss[id].title}
+								</button>
+							</li>
+						{/each}
+					</ul>
+				{/each}
+			</div>
+			<button type="button" class="close-main-btn" onclick={() => dialog.close()}>
+				<i class="fa-solid fa-xmark" aria-hidden="true"></i>
+				{strings.glossaryClose}
+			</button>
+		</nav>
+		<div class="content-view" bind:this={content}>
+			{#each groups as [group, ids] (group)}
+				{#each ids as id (id)}
+					<section id="g-{id}" aria-labelledby="g-{id}-title">
+						<h3 id="g-{id}-title">{strings.gloss[id].title}</h3>
+						{#each strings.gloss[id].body.split('\n') as para, i (i)}<p>{para}</p>{/each}
+					</section>
+				{/each}
 			{/each}
-		</ul>
+			<p class="footer-note">{strings.glossaryFooter}</p>
+		</div>
 	</div>
 </dialog>
 
 <style>
-	.glossary-inner {
+	.layout {
 		display: flex;
-		flex-direction: column;
 		height: 100%;
-		overflow: hidden;
 	}
-	.glossary-head {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 1rem 1.25rem;
-		border-bottom: 1px solid var(--panel-border);
+
+	.toc {
+		width: 15.5rem;
 		flex-shrink: 0;
-	}
-	.glossary-head h2 {
-		font-size: 1.1rem;
-		color: var(--text-primary);
-		margin: 0;
-	}
-	.close-btn {
-		background: transparent;
-		border: 1px solid var(--control-border);
-		border-radius: 6px;
-		color: var(--text-secondary);
-		width: 32px;
-		height: 32px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 0.9rem;
-	}
-	.close-btn:hover {
-		background: var(--red-tint);
-		border-color: var(--red);
-		color: var(--red-text);
-	}
-	.glossary-list {
-		list-style: none;
-		padding: 1rem 1.25rem;
-		margin: 0;
-		overflow-y: auto;
+		background: var(--bg-primary);
+		border-right: 1px solid var(--panel-border);
+		padding: 1.3rem 1rem 1rem 1.3rem;
 		display: flex;
 		flex-direction: column;
-		gap: 1.1rem;
+		gap: 0.6rem;
+		min-height: 0;
 	}
-	.term {
-		font-weight: 700;
-		color: var(--accent);
-		font-family: var(--mono);
-		font-size: 0.88rem;
-		margin: 0 0 0.25rem;
-	}
-	.def {
+
+	.toc h2 {
+		font-size: 0.78rem;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+		color: var(--text-secondary);
 		margin: 0;
-		font-size: 0.84rem;
+	}
+
+	.toc-scroll {
+		flex: 1;
+		overflow-y: auto;
+		min-height: 0;
+	}
+
+	.group {
+		font-size: 0.68rem;
+		font-weight: 700;
+		color: var(--text-secondary);
+		text-transform: uppercase;
+		letter-spacing: 0.8px;
+		margin: 0.8rem 0 0.2rem;
+	}
+
+	.group:first-child {
+		margin-top: 0;
+	}
+
+	.toc ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.toc button {
+		background: none;
+		border: none;
+		font-size: 0.82rem;
+		color: var(--text-secondary);
+		padding: 0.3rem 0;
+		display: block;
+		text-align: left;
+		width: 100%;
+	}
+
+	.toc button:hover,
+	.toc button.active {
+		color: var(--accent);
+	}
+
+	/* Current entry: colour, weight AND a marker. */
+	.toc button.active {
+		font-weight: 700;
+	}
+
+	.toc button.active::before {
+		content: '▸ ';
+	}
+
+	.close-main-btn {
+		background: var(--bg-secondary);
+		border: 1px solid var(--control-border);
+		padding: 0.55rem;
+		border-radius: 6px;
+		font-size: 0.82rem;
+		font-weight: 700;
 		color: var(--text-primary);
-		line-height: 1.55;
+	}
+
+	.content-view {
+		flex: 1;
+		padding: 1.8rem 2rem;
+		overflow-y: auto;
+		scroll-behavior: smooth;
+		min-width: 0;
+	}
+
+	.content-view section {
+		margin-bottom: 1.6rem;
+		padding-bottom: 1.4rem;
+		border-bottom: 1px solid var(--panel-border);
+	}
+
+	.content-view h3 {
+		font-size: 1.25rem;
+		color: var(--text-primary);
+		margin: 0 0 0.7rem;
+	}
+
+	.content-view p {
+		line-height: 1.65;
+		color: var(--text-secondary);
+		font-size: 0.95rem;
+		margin: 0 0 0.7rem;
+	}
+
+	.footer-note {
+		font-style: italic;
+		font-size: 0.85rem;
+		color: var(--accent);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.content-view {
+			scroll-behavior: auto;
+		}
+	}
+
+	@media (max-width: 699px) {
+		.layout {
+			flex-direction: column;
+		}
+
+		.toc {
+			width: auto;
+			max-height: 40%;
+			border-right: 0;
+			border-bottom: 1px solid var(--panel-border);
+		}
 	}
 </style>

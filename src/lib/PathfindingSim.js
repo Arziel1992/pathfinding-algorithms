@@ -54,12 +54,6 @@ export class PathfindingSim {
 		this._clearTimer();
 	}
 
-	/** Resume after pause(). */
-	resume(delayMs = 30) {
-		if (!this.running || this.finished) return;
-		this.play(delayMs);
-	}
-
 	/** Advance exactly one step (for step-through mode). */
 	step() {
 		if (!this.running || this.finished) return;

@@ -1,209 +1,311 @@
+<script module>
+	/** Search overlay codes, one byte per cell, written by App and read here. */
+	export const SEARCH = { NONE: 0, OPEN: 1, CLOSED: 2, OPEN_BWD: 3, CLOSED_BWD: 4 };
+</script>
+
 <script>
 	/**
-	 * Canvas.svelte — Grid renderer and mouse/touch interaction handler.
+	 * Canvas.svelte — Draws the grid in layers and turns pointer and keyboard
+	 * input into cell events. Never mutates the grid or the search itself.
 	 *
-	 * Renders the pathfinding grid onto an HTML Canvas.
-	 * Reports cell interactions via callbacks; never mutates props directly.
+	 * Layers, bottom to top: terrain (open, wall, mud), the search overlay
+	 * (expanded = tint, frontier = tint + dot), mud weights, grid lines,
+	 * S and E, the predicted route (dashed), the found path (solid), and the
+	 * keyboard cursor. The path is a LINE, not a fill colour, so it can never be
+	 * confused with the cells the search expanded.
 	 */
 	import { onMount } from 'svelte';
 
 	let {
-		cellStates,
-		rows,
-		cols,
-		weightMap,
-		renderTick = 0,
-		onCellDown,
-		onCellDrag,
+		grid,
+		search,
+		gCost,
+		showCosts = false,
+		path,
+		predicted,
+		start,
+		end,
+		tick = 0,
 		strings,
+		fmt,
+		onPaint,
 	} = $props();
 
 	let canvas = $state(null);
-	let ctx = $state(null);
-	let dpr = 1;
+	let ctx = null;
 	let cellW = 0;
 	let cellH = 0;
+	let cursor = $state({ r: 0, c: 0 });
+	let focused = $state(false);
 
-	// ─── Cell colour palette (CSS custom properties read at paint time) ──────────
-	const COLOURS = {
-		'': () => getVar('--cell-empty'),
-		wall: () => getVar('--cell-wall'),
-		start: () => getVar('--cell-start'),
-		end: () => getVar('--cell-end'),
-		open: () => getVar('--cell-open'),
-		closed: () => getVar('--cell-closed'),
-		path: () => getVar('--cell-path'),
-		'open-bwd': () => getVar('--cell-open-bwd'),
-		'closed-bwd': () => getVar('--cell-closed-bwd'),
-	};
-
-	function getVar(name) {
-		return getComputedStyle(canvas).getPropertyValue(name).trim();
+	function palette() {
+		const css = getComputedStyle(document.documentElement);
+		const v = (n) => css.getPropertyValue(n).trim();
+		return {
+			empty: v('--cell-empty'),
+			grid: v('--cell-grid'),
+			wall: v('--cell-wall'),
+			mud: v('--cell-mud-rgb'),
+			mudText: v('--cell-mud-text'),
+			mudTextStrong: v('--cell-mud-text-strong'),
+			costText: v('--cell-cost-text'),
+			gText: v('--cell-g-text'),
+			open: v('--cell-open'),
+			openDot: v('--cell-open-dot'),
+			closed: v('--cell-closed'),
+			openBwd: v('--cell-open-bwd'),
+			openBwdDot: v('--cell-open-bwd-dot'),
+			closedBwd: v('--cell-closed-bwd'),
+			start: v('--cell-start'),
+			startText: v('--cell-start-text'),
+			end: v('--cell-end'),
+			endText: v('--cell-end-text'),
+			path: v('--cell-path'),
+			predicted: v('--cell-predicted'),
+			focus: v('--focus'),
+			mono: v('--mono'),
+			sans: v('--sans'),
+		};
 	}
 
-	function weightColour(level) {
-		// Purple family, darker for higher weights
-		const alpha = 0.25 + (level - 2) * 0.12;
-		return `rgba(139,92,246,${alpha.toFixed(2)})`;
-	}
-
-	// ─── Sizing ──────────────────────────────────────────────────────────────────
 	function resize() {
 		if (!canvas) return;
-		dpr = window.devicePixelRatio || 1;
+		const dpr = window.devicePixelRatio || 1;
 		const rect = canvas.getBoundingClientRect();
-		canvas.width = rect.width * dpr;
-		canvas.height = rect.height * dpr;
+		canvas.width = Math.round(rect.width * dpr);
+		canvas.height = Math.round(rect.height * dpr);
 		ctx = canvas.getContext('2d');
-		ctx.scale(dpr, dpr);
-		cellW = rect.width / cols;
-		cellH = rect.height / rows;
+		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		cellW = rect.width / grid.cols;
+		cellH = rect.height / grid.rows;
 		draw();
 	}
 
-	// ─── Drawing ─────────────────────────────────────────────────────────────────
-	function draw() {
-		if (!ctx || !canvas) return;
-		const rect = canvas.getBoundingClientRect();
-		const W = rect.width;
-		const H = rect.height;
+	const centre = (p) => [p.c * cellW + cellW / 2, p.r * cellH + cellH / 2];
 
-		ctx.clearRect(0, 0, W, H);
+	function line(points, colour, width, dash) {
+		if (points.length < 2) return;
+		ctx.save();
+		ctx.strokeStyle = colour;
+		ctx.lineWidth = width;
+		ctx.lineCap = 'round';
+		ctx.lineJoin = 'round';
+		ctx.setLineDash(dash);
+		ctx.beginPath();
+		ctx.moveTo(...centre(points[0]));
+		for (const p of points.slice(1)) ctx.lineTo(...centre(p));
+		ctx.stroke();
+		ctx.restore();
+	}
+
+	function label(text, x, y, colour, font) {
+		ctx.fillStyle = colour;
+		ctx.font = font;
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText(text, x, y);
+	}
+
+	function draw() {
+		if (!ctx) return;
+		const P = palette();
+		const { rows, cols } = grid;
+		const size = Math.min(cellW, cellH);
+		ctx.clearRect(0, 0, cols * cellW, rows * cellH);
 
 		for (let r = 0; r < rows; r++) {
 			for (let c = 0; c < cols; c++) {
-				const state = cellStates[r]?.[c] ?? '';
 				const x = c * cellW;
 				const y = r * cellH;
-
-				// Background
-				if (state.startsWith('weight-')) {
-					const level = parseInt(state.slice(7), 10);
-					ctx.fillStyle = weightColour(level);
+				const w = grid.weight(r, c);
+				// Terrain
+				if (grid.isWall(r, c)) ctx.fillStyle = P.wall;
+				else if (w > 1) ctx.fillStyle = `rgba(${P.mud}, ${(0.12 + w * 0.07).toFixed(2)})`;
+				else ctx.fillStyle = P.empty;
+				ctx.fillRect(x, y, cellW, cellH);
+				// Search overlay
+				const s = search[r * cols + c];
+				if (s) {
+					ctx.fillStyle = [null, P.open, P.closed, P.openBwd, P.closedBwd][s];
 					ctx.fillRect(x, y, cellW, cellH);
-					// Faint label
-					ctx.fillStyle = 'rgba(109,40,217,0.7)';
-					ctx.font = `bold ${Math.max(8, cellH * 0.45)}px var(--mono, monospace)`;
-					ctx.textAlign = 'center';
-					ctx.textBaseline = 'middle';
-					ctx.fillText(String(level), x + cellW / 2, y + cellH / 2);
-				} else {
-					const colFn = COLOURS[state] ?? COLOURS[''];
-					ctx.fillStyle = colFn();
-					ctx.fillRect(x, y, cellW, cellH);
-
-					// Icons for start / end
-					if (state === 'start' || state === 'end') {
-						ctx.fillStyle = state === 'start' ? '#ffffff' : '#ffffff';
-						ctx.font = `bold ${Math.max(9, cellH * 0.5)}px var(--sans, sans-serif)`;
-						ctx.textAlign = 'center';
-						ctx.textBaseline = 'middle';
-						ctx.fillText(state === 'start' ? 'S' : 'E', x + cellW / 2, y + cellH / 2);
+					if (s === SEARCH.OPEN || s === SEARCH.OPEN_BWD) {
+						ctx.fillStyle = s === SEARCH.OPEN ? P.openDot : P.openBwdDot;
+						ctx.beginPath();
+						ctx.arc(x + cellW / 2, y + cellH / 2, size * 0.14, 0, Math.PI * 2);
+						ctx.fill();
 					}
 				}
-
-				// Grid line
-				ctx.strokeStyle = getVar('--cell-grid');
+				// Entry cost. Off: mud shows its weight, centred. On: every open
+				// cell shows its cost in the corner and, where the search knows
+				// it, g (metres so far) in the centre.
+				const wall = grid.isWall(r, c);
+				const ink = w >= 6 ? P.mudTextStrong : w > 1 ? P.mudText : P.costText;
+				if (!wall && showCosts) {
+					ctx.textAlign = 'left';
+					ctx.textBaseline = 'top';
+					ctx.fillStyle = ink;
+					ctx.font = `700 ${Math.max(7, size * 0.3)}px ${P.mono}`;
+					ctx.fillText(String(w), x + 2, y + 1);
+					const g = gCost[r * cols + c];
+					if (!Number.isNaN(g))
+						// Whole metres print without ".0"; only diagonal costs need a decimal.
+						label(
+							Number.isInteger(g) || g >= 100 ? String(Math.round(g)) : g.toFixed(1),
+							x + cellW / 2,
+							y + cellH * 0.64,
+							w >= 6 ? P.mudTextStrong : P.gText,
+							`700 ${Math.max(8, size * 0.4)}px ${P.mono}`,
+						);
+				} else if (w > 1 && !wall) {
+					label(String(w), x + cellW / 2, y + cellH / 2, ink, `700 ${Math.max(8, size * 0.5)}px ${P.mono}`);
+				}
+				ctx.strokeStyle = P.grid;
 				ctx.lineWidth = 0.5;
 				ctx.strokeRect(x, y, cellW, cellH);
 			}
 		}
+
+		line(predicted, P.predicted, Math.max(2, size * 0.16), [size * 0.35, size * 0.25]);
+		line(path, P.path, Math.max(3, size * 0.28), []);
+
+		for (const [p, fill, text, letter] of [
+			[start, P.start, P.startText, 'S'],
+			[end, P.end, P.endText, 'E'],
+		]) {
+			ctx.fillStyle = fill;
+			ctx.fillRect(p.c * cellW + 1, p.r * cellH + 1, cellW - 2, cellH - 2);
+			label(letter, ...centre(p), text, `800 ${Math.max(9, size * 0.6)}px ${P.sans}`);
+		}
+
+		if (focused) {
+			ctx.strokeStyle = P.focus;
+			ctx.lineWidth = 3;
+			ctx.strokeRect(cursor.c * cellW + 1.5, cursor.r * cellH + 1.5, cellW - 3, cellH - 3);
+		}
 	}
 
-	// ─── Reactivity: redraw whenever cellStates or renderTick changes ────────────
+	// Redraw on any change the parent signals, and when the theme flips.
 	$effect(() => {
-		void cellStates;
-		void renderTick;
+		void tick;
+		void showCosts;
+		void predicted;
+		void path;
+		void start;
+		void end;
+		void focused;
+		void cursor;
 		draw();
 	});
 
-	// ─── Mouse / touch interaction ───────────────────────────────────────────────
-	function cellAt(clientX, clientY) {
-		if (!canvas) return null;
+	// ─── Pointer ─────────────────────────────────────────────────────────────
+	function cellAt(e) {
 		const rect = canvas.getBoundingClientRect();
-		const r = Math.floor(((clientY - rect.top) / rect.height) * rows);
-		const c = Math.floor(((clientX - rect.left) / rect.width) * cols);
-		if (r < 0 || r >= rows || c < 0 || c >= cols) return null;
-		return { r, c };
+		const r = Math.floor(((e.clientY - rect.top) / rect.height) * grid.rows);
+		const c = Math.floor(((e.clientX - rect.left) / rect.width) * grid.cols);
+		return grid.inBounds(r, c) ? { r, c } : null;
 	}
 
-	let dragging = false;
-	let lastCell = null;
+	let dragButton = -1;
+	let last = null;
 
-	function handlePointerDown(e) {
+	function down(e) {
 		e.preventDefault();
-		dragging = true;
-		lastCell = null;
-		const cell = cellAt(e.clientX, e.clientY);
-		if (cell) { onCellDown?.(cell.r, cell.c, e.button); lastCell = cell; }
+		dragButton = e.button;
+		const cell = cellAt(e);
+		if (!cell) return;
+		last = cell;
+		cursor = cell;
+		onPaint(cell.r, cell.c, e.button, false);
 		canvas.setPointerCapture(e.pointerId);
 	}
 
-	function handlePointerMove(e) {
-		if (!dragging) return;
-		const cell = cellAt(e.clientX, e.clientY);
-		if (!cell) return;
-		if (cell.r === lastCell?.r && cell.c === lastCell?.c) return;
-		onCellDrag?.(cell.r, cell.c, e.button);
-		lastCell = cell;
+	function move(e) {
+		if (dragButton < 0) return;
+		const cell = cellAt(e);
+		if (!cell || (cell.r === last?.r && cell.c === last?.c)) return;
+		last = cell;
+		cursor = cell;
+		onPaint(cell.r, cell.c, dragButton, true);
 	}
 
-	function handlePointerUp() {
-		dragging = false;
-		lastCell = null;
+	function up() {
+		dragButton = -1;
+		last = null;
 	}
 
-	function handleContextMenu(e) {
-		e.preventDefault(); // allow right-click drag
+	// ─── Keyboard: the grid is fully operable without a pointer (WCAG 2.1.1) ──
+	const MOVES = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+
+	function key(e) {
+		if (MOVES[e.key]) {
+			e.preventDefault();
+			const [dr, dc] = MOVES[e.key];
+			const r = Math.min(grid.rows - 1, Math.max(0, cursor.r + dr));
+			const c = Math.min(grid.cols - 1, Math.max(0, cursor.c + dc));
+			cursor = { r, c };
+		} else if (e.key === 'Enter') {
+			e.preventDefault();
+			onPaint(cursor.r, cursor.c, 0, false);
+		}
 	}
 
-	// ─── Mount ───────────────────────────────────────────────────────────────────
+	function describe(p) {
+		const k = strings.cellKinds;
+		if (p.r === start.r && p.c === start.c) return k.start;
+		if (p.r === end.r && p.c === end.c) return k.end;
+		if (grid.isWall(p.r, p.c)) return k.wall;
+		const w = grid.weight(p.r, p.c);
+		const what = w > 1 ? fmt(k.weight, { w }) : k.empty;
+		const g = gCost[p.r * grid.cols + p.c];
+		return Number.isNaN(g) ? what : `${what}, ${fmt(strings.cellG, { g: g.toFixed(1) })}`;
+	}
+
+	let announcement = $derived.by(() => {
+		void tick;
+		return focused
+			? fmt(strings.cursorAt, { r: cursor.r + 1, c: cursor.c + 1, what: describe(cursor) })
+			: '';
+	});
+
 	onMount(() => {
+		cursor = { ...start };
 		const ro = new ResizeObserver(resize);
 		ro.observe(canvas);
+		const mo = new MutationObserver(draw);
+		mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 		resize();
-		return () => ro.disconnect();
+		return () => {
+			ro.disconnect();
+			mo.disconnect();
+		};
 	});
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <canvas
 	bind:this={canvas}
-	aria-label={strings.tagline}
-	style="width:100%;height:100%;cursor:crosshair;display:block;"
-	onpointerdown={handlePointerDown}
-	onpointermove={handlePointerMove}
-	onpointerup={handlePointerUp}
-	onpointerleave={handlePointerUp}
-	oncontextmenu={handleContextMenu}
+	tabindex="0"
+	aria-label={fmt(strings.canvasLabel, { rows: grid.rows, cols: grid.cols })}
+	onpointerdown={down}
+	onpointermove={move}
+	onpointerup={up}
+	onpointercancel={up}
+	oncontextmenu={(e) => e.preventDefault()}
+	onkeydown={key}
+	onfocus={() => (focused = true)}
+	onblur={() => (focused = false)}
 ></canvas>
+<p class="visually-hidden" aria-live="polite">{announcement}</p>
 
 <style>
 	canvas {
-		/* ── Cell palette: light theme defaults ── */
-		--cell-empty: #f1f5f9;
-		--cell-wall: #1e293b;
-		--cell-grid: #cbd5e1;
-		--cell-start: #10b981;
-		--cell-end: #ef4444;
-		--cell-open: rgba(251, 191, 36, 0.75);
-		--cell-closed: rgba(59, 130, 246, 0.55);
-		--cell-path: #fbbf24;
-		--cell-open-bwd: rgba(167, 139, 250, 0.75);
-		--cell-closed-bwd: rgba(139, 92, 246, 0.55);
+		width: 100%;
+		height: 100%;
+		display: block;
+		cursor: crosshair;
+		touch-action: none;
 	}
-
-	/* Dark theme overrides — applied via [data-theme="dark"] on <html> */
-	:global([data-theme='dark']) canvas {
-		--cell-empty: #0e1626;
-		--cell-wall: #334155;
-		--cell-grid: #1e2d45;
-		--cell-start: #34d399;
-		--cell-end: #f87171;
-		--cell-open: rgba(251, 191, 36, 0.65);
-		--cell-closed: rgba(96, 165, 250, 0.5);
-		--cell-path: #fcd34d;
-		--cell-open-bwd: rgba(196, 181, 253, 0.7);
-		--cell-closed-bwd: rgba(167, 139, 250, 0.5);
+	canvas:focus-visible {
+		outline: 3px solid var(--focus);
+		outline-offset: -3px;
 	}
 </style>

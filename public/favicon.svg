@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Pathfinding Algorithms">
+	<title>Pathfinding Algorithms</title>
+	<rect width="32" height="32" rx="7" fill="#12518f"/>
+	<!-- A wall, and the route that goes round it from S to E: the idea the tool exists to show. -->
+	<rect x="14" y="9" width="4" height="16" rx="1" fill="#ffffff" opacity="0.9"/>
+	<path d="M8.5 23.5 V6.5 H23.5 V23.5" fill="none" stroke="#ffb454" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+	<rect x="5" y="20" width="7" height="7" rx="1.5" fill="#34d399"/>
+	<rect x="20" y="20" width="7" height="7" rx="1.5" fill="#f87171"/>
+</svg>

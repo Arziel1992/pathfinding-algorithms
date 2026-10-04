@@ -1,210 +1,158 @@
 <script>
 	/**
-	 * Controls.svelte — Right sidebar: algorithm selector, drawing tools, actions.
-	 *
-	 * All interactive values are $bindable() or callback props. This component
-	 * never mutates shared state directly.
+	 * Controls.svelte — Right rail: algorithm, heuristic, options, drawing,
+	 * scenes and the run buttons. Input only: values are $bindable and actions
+	 * are callbacks; it never reaches into the grid or the runner.
 	 */
 	import { ALGORITHM_ORDER } from './algorithms/index.js';
+	import { admissible } from './evaluate.js';
 	import { HEURISTIC_ORDER } from './Heuristics.js';
 
 	let {
 		params = $bindable(),
-		telemetry,
+		status,
+		hasPrediction,
 		strings,
+		fmt,
 		onPlay,
 		onPause,
 		onStep,
-		onStop,
 		onClearPath,
 		onClearAll,
-		onMaze,
+		onClearPrediction,
+		onScene,
+		onCompare,
 		onGlossary,
 	} = $props();
 
-	const selectedAlgo = $derived(ALGORITHM_ORDER.find((id) => id === params.algorithm));
-	const algoSupportsHeuristic = $derived(
-		['astar', 'greedy', 'idastar'].includes(params.algorithm),
-	);
-	const algoSupportsWeights = $derived(
-		['dijkstra', 'astar', 'idastar'].includes(params.algorithm),
-	);
-
-	const isRunning = $derived(telemetry.status === 'running');
-	const isDone = $derived(['done', 'noPath'].includes(telemetry.status));
-	const canPlay = $derived(!isRunning && !isDone);
-	const canPause = $derived(isRunning);
-	const canStep = $derived(telemetry.status !== 'done' && telemetry.status !== 'noPath');
-
-	// Speed: 200ms (slow) → 5ms (fast), mapped from slider 1–200
-	const SPEED_MS = $derived(201 - params.speed);
+	const usesHeuristic = $derived(['astar', 'greedy', 'idastar'].includes(params.algorithm));
+	const running = $derived(status === 'running');
+	const finished = $derived(['done', 'noPath', 'gaveUp'].includes(status));
+	const MODES = ['predict', 'wall', 'weight', 'erase', 'start', 'end'];
 </script>
 
-<div class="controls-panel" role="complementary" aria-label={strings.controls}>
+{#snippet help(section)}
+	<button class="glossary-btn" onclick={() => onGlossary(section)} aria-label={strings.openGlossary} title={strings.openGlossary}>?</button>
+{/snippet}
 
-	<!-- ── Algorithm ─────────────────────────────────────────────── -->
+<div class="controls-panel">
 	<div class="section-header" style="margin-top:0">
-		<h2>{strings.algorithm}</h2>
-		<button class="glossary-btn" onclick={onGlossary} aria-label="Open glossary">?</button>
+		<h2 id="algo-heading">{strings.algorithm}</h2>
+		{@render help('open')}
 	</div>
-
-	<div class="toggle-list" role="radiogroup" aria-label={strings.algorithm}>
-		{#each ALGORITHM_ORDER as id}
-			<button
-				role="radio"
-				aria-checked={params.algorithm === id}
-				disabled={isRunning}
-				onclick={() => { params.algorithm = id; }}
-			>
+	<div class="toggle-list" role="group" aria-labelledby="algo-heading">
+		{#each ALGORITHM_ORDER as id (id)}
+			<button aria-pressed={params.algorithm === id} disabled={running} onclick={() => (params.algorithm = id)}>
 				{strings.algoNames[id]}
 			</button>
 		{/each}
 	</div>
 
-	<!-- ── Heuristic (conditional) ───────────────────────────────── -->
-	{#if algoSupportsHeuristic}
-		<div class="section-header">
-			<h2>{strings.heuristic}</h2>
-		</div>
+	{#if usesHeuristic}
 		<div class="control-group">
-			<select
-				bind:value={params.heuristic}
-				disabled={isRunning}
-				aria-label={strings.heuristic}
-			>
-				{#each HEURISTIC_ORDER as hid}
+			<label class="field-label" for="heuristic">{strings.heuristic}</label>
+			<select id="heuristic" bind:value={params.heuristic} disabled={running}>
+				{#each HEURISTIC_ORDER as hid (hid)}
 					<option value={hid}>{strings.heuristicNames[hid]}</option>
 				{/each}
 			</select>
+			{#if !admissible(params.heuristic, params.diagonal)}
+				<p class="warn" role="note">
+					<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+					{strings.heuristicWarning}
+				</p>
+			{/if}
 		</div>
 	{/if}
 
-	<!-- ── Options ───────────────────────────────────────────────── -->
-	<div class="section-header">
-		<h2>{strings.controls}</h2>
-	</div>
-
+	<div class="section-header"><h2>{strings.options}</h2>{@render help('costs')}</div>
 	<div class="control-group">
 		<label class="toggle-label">
-			<input type="checkbox" bind:checked={params.diagonal} disabled={isRunning} />
+			<input type="checkbox" bind:checked={params.diagonal} disabled={running} />
 			{strings.diagonal}
 		</label>
 	</div>
-
-	{#if algoSupportsWeights}
-		<div class="control-group">
-			<label class="toggle-label">
-				<input type="checkbox" bind:checked={params.showWeights} disabled={isRunning} />
-				{strings.showWeightMode}
-			</label>
-		</div>
-	{/if}
-
-	<!-- ── Speed ─────────────────────────────────────────────────── -->
+	<div class="control-group">
+		<label class="toggle-label">
+			<input type="checkbox" bind:checked={params.showCosts} aria-describedby="costs-hint" />
+			{strings.showCosts}
+		</label>
+		<p class="hint" id="costs-hint">{strings.showCostsHint}</p>
+	</div>
 	<div class="control-group">
 		<div class="label-row">
-			<span>{strings.speed}</span>
-			<output>{SPEED_MS === 1 ? `${strings.speedFast}` : SPEED_MS < 50 ? `${SPEED_MS}ms` : strings.speedSlow}</output>
+			<label for="speed">{strings.speed}</label>
+			<output for="speed">{fmt(strings.speedValue, { ms: 201 - params.speed })}</output>
 		</div>
-		<input
-			type="range"
-			min="1"
-			max="200"
-			bind:value={params.speed}
-			aria-label={strings.speed}
-		/>
-		<p class="hint">{strings.speedSlow} ← → {strings.speedFast}</p>
+		<input id="speed" type="range" min="1" max="200" bind:value={params.speed} />
 	</div>
 
-	<!-- ── Draw mode ─────────────────────────────────────────────── -->
-	<div class="section-header">
-		<h2>{strings.drawMode}</h2>
-	</div>
-	<div class="toggle-list" role="radiogroup" aria-label={strings.drawMode}>
-		{#each Object.keys(strings.modes) as mode}
-			{#if mode !== 'weight' || algoSupportsWeights}
-				<button
-					role="radio"
-					aria-checked={params.drawMode === mode}
-					onclick={() => { params.drawMode = mode; }}
-					disabled={isRunning}
-				>
-					{strings.modes[mode]}
-				</button>
-			{/if}
+	<div class="section-header"><h2 id="mode-heading">{strings.drawMode}</h2>{@render help('predict')}</div>
+	<div class="toggle-list" role="group" aria-labelledby="mode-heading">
+		{#each MODES as mode (mode)}
+			<button aria-pressed={params.drawMode === mode} disabled={running} onclick={() => (params.drawMode = mode)}>
+				{strings.modes[mode]}
+			</button>
 		{/each}
 	</div>
-
-	{#if params.drawMode === 'weight' && algoSupportsWeights}
+	{#if params.drawMode === 'weight'}
 		<div class="control-group">
 			<div class="label-row">
-				<span>{strings.weightLevel}</span>
-				<output>{params.weightLevel}</output>
+				<label for="weight">{strings.weightLevel}</label>
+				<output for="weight">× {params.weightLevel}</output>
 			</div>
-			<input
-				type="range"
-				min="2"
-				max="9"
-				bind:value={params.weightLevel}
-				aria-label={strings.weightLevel}
-			/>
+			<input id="weight" type="range" min="2" max="9" bind:value={params.weightLevel} />
+			<p class="hint">{strings.weightHint}</p>
 		</div>
 	{/if}
+	{#if params.drawMode === 'predict'}
+		<p class="hint">{strings.predictHint}</p>
+	{/if}
+	{#if hasPrediction}
+		<button class="clear-btn" onclick={onClearPrediction} disabled={running}>{strings.predictClear}</button>
+	{/if}
 
-	<!-- ── Maze generator ────────────────────────────────────────── -->
-	<div class="section-header">
-		<h2>{strings.maze}</h2>
-	</div>
+	<div class="section-header"><h2>{strings.actions}</h2>{@render help('compare')}</div>
 	<div class="action-row">
-		<button class="clear-btn" onclick={() => onMaze('random')} disabled={isRunning}>
-			{strings.mazeRandom}
-		</button>
-		<button class="clear-btn" onclick={() => onMaze('recursive')} disabled={isRunning}>
-			{strings.mazeRecursive}
-		</button>
-	</div>
-
-	<!-- ── Actions ───────────────────────────────────────────────── -->
-	<div class="section-header">
-		<h2>{strings.actions}</h2>
-	</div>
-	<div class="action-row">
-		{#if canPlay}
-			<button class="clear-btn primary" onclick={onPlay} aria-label={strings.play}>
-				▶ {strings.play}
-			</button>
-		{:else if canPause}
-			<button class="clear-btn primary" onclick={onPause} aria-label={strings.pause}>
-				⏸ {strings.pause}
+		{#if running}
+			<button class="clear-btn primary" onclick={onPause}>
+				<i class="fa-solid fa-pause" aria-hidden="true"></i> {strings.pause}
 			</button>
 		{:else}
-			<button class="clear-btn primary" onclick={onPlay} aria-label={strings.play} disabled>
-				▶ {strings.play}
+			<button class="clear-btn primary" onclick={onPlay}>
+				<i class="fa-solid fa-play" aria-hidden="true"></i> {strings.play}
 			</button>
 		{/if}
-		<button
-			class="clear-btn"
-			onclick={onStep}
-			disabled={!canStep}
-			aria-label={strings.step}
-		>
-			⏭ {strings.step}
+		<button class="clear-btn" onclick={onStep} disabled={finished}>
+			<i class="fa-solid fa-forward-step" aria-hidden="true"></i> {strings.step}
 		</button>
 	</div>
 	<div class="action-row">
-		<button class="clear-btn" onclick={onClearPath} aria-label={strings.clearPath}>
-			{strings.clearPath}
-		</button>
-		<button class="clear-btn" onclick={onStop} disabled={!isRunning} aria-label={strings.stop}>
-			⏹ {strings.stop}
+		<button class="clear-btn" onclick={onClearPath}>{strings.clearPath}</button>
+		<button class="clear-btn" onclick={onCompare} disabled={running}>
+			<i class="fa-solid fa-table" aria-hidden="true"></i> {strings.compareAll}
 		</button>
 	</div>
-	<button class="reset-btn" onclick={onClearAll} aria-label={strings.clearAll}>
-		{strings.clearAll}
-	</button>
+
+	<div class="section-header"><h2>{strings.maze}</h2></div>
+	<div class="action-row">
+		<button class="clear-btn" onclick={() => onScene('demo')} disabled={running}>{strings.mazeDemo}</button>
+		<button class="clear-btn" onclick={() => onScene('random')} disabled={running}>{strings.mazeRandom}</button>
+		<button class="clear-btn" onclick={() => onScene('maze')} disabled={running}>{strings.mazeRecursive}</button>
+		<button class="clear-btn" onclick={() => onScene('costs')} disabled={running}>
+			<i class="fa-solid fa-dice" aria-hidden="true"></i> {strings.mazeCosts}
+		</button>
+	</div>
+	<button class="reset-btn" onclick={onClearAll} disabled={running}>{strings.clearAll}</button>
 </div>
 
 <style>
+	.field-label {
+		display: block;
+		font-size: 0.8rem;
+		font-weight: 700;
+		margin-bottom: 0.3rem;
+	}
 	select {
 		width: 100%;
 		padding: 0.4rem 0.5rem;
@@ -213,10 +161,27 @@
 		background: var(--bg-primary);
 		color: var(--text-primary);
 		font-size: 0.82rem;
-		cursor: pointer;
 	}
 	select:focus-visible {
 		outline: 3px solid var(--focus);
 		outline-offset: 2px;
+	}
+	.warn {
+		margin: 0.5rem 0 0;
+		padding: 0.5rem 0.6rem;
+		border-radius: 6px;
+		background: var(--orange-tint);
+		color: var(--orange-text);
+		border: 1px solid var(--orange);
+		font-size: 0.76rem;
+		line-height: 1.45;
+	}
+	.hint {
+		font-size: 0.76rem;
+		color: var(--text-secondary);
+		margin: 0.35rem 0 0.5rem;
+	}
+	.action-row {
+		flex-wrap: wrap;
 	}
 </style>
