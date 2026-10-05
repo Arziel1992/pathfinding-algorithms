@@ -459,4 +459,5 @@ export default {
 	footerMadeWith: "Made with ❤️ for Swinburne",
 	footerSubject: "Pathfinding",
 	versionTitle: "Version: the date and time of this release",
+	repository: "Repository",
 };

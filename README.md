@@ -8,6 +8,9 @@ metres on the same grid.
 It is for any unit that teaches graph search: AI for games (COS30002, where it is used first), data
 structures and algorithms.
 
+**Live:** <https://arziel1992.github.io/pathfinding-algorithms/> ·
+**Repository:** <https://github.com/Arziel1992/pathfinding-algorithms>
+
 ## Teaching Design
 
 | Question | Answer |
@@ -112,8 +115,7 @@ Open the running tool with `?selftest` to print the same checks in the browser c
 Source layout: `src/lib/algorithms/` one generator per search, registered in `index.js`;
 `src/lib/evaluate.js` route scoring and comparison; `src/lib/i18n/` one file per language.
 
-Deployment is GitHub Pages from `main` through `.github/workflows/deploy.yml`, once the repository
-exists. Until then the footer carries the version and no links (`tool-sequence` rule 10).
+Deployment is GitHub Pages from `main` through `.github/workflows/deploy.yml`.
 
 ## License
 

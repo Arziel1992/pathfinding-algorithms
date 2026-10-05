@@ -465,4 +465,5 @@ export default {
 	footerMadeWith: "Hecho con ❤️ para Swinburne",
 	footerSubject: "Búsqueda de caminos",
 	versionTitle: "Versión: la fecha y hora de esta publicación",
+	repository: "Repositorio",
 };

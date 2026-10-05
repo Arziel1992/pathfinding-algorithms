@@ -3,6 +3,14 @@
 Reverse-chronological, newest first. Each heading is the release instant;
 the version in `package.json` is the same instant written `YYYY.M.D-HHMM`.
 
+## 2026-10-05 - 18:39
+
+- **Footer: repository link, and the version badge linked to `CHANGELOG.md`**, now that the tool
+  is deployed (the repository confirmed with `git ls-remote`). Missing since the tool went live;
+  the conformance check had reported it.
+- README: the live site and the repository linked at the top; the stale "until the repository
+  exists" sentence removed.
+
 ## 2026-10-04 - 22:09
 
 ### Added

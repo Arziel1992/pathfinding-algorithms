@@ -37,6 +37,7 @@
 	const ROWS = 21;
 	const COLS = 41;
 	const KEY = 'pathfinding-algorithms';
+	const REPOSITORY = 'https://github.com/Arziel1992/pathfinding-algorithms';
 
 	// ─── Locale and theme (already resolved before first paint in index.html) ──
 	let locale = $state(document.documentElement.lang === 'es' ? 'es' : 'en');
@@ -407,9 +408,13 @@
 {#snippet footer()}
 	<footer class="app-footer">
 		{strings.footerMadeWith} — {strings.footerSubject} — By E. Ketterer<br />
-		<!-- No repository link and no CHANGELOG link until the remote exists
-		     (tool-sequence rule 10). -->
-		<span class="badge" title={strings.versionTitle}>v{VERSION}</span>
+		<!-- The repository was confirmed with git ls-remote on 2026-10-05 before
+		     this link was written. -->
+		<a href={REPOSITORY} rel="noopener">
+			<i class="fa-brands fa-github" aria-hidden="true"></i>
+			{strings.repository}
+		</a>
+		<a class="badge" href="{REPOSITORY}/blob/main/CHANGELOG.md" rel="noopener" title={strings.versionTitle}>v{VERSION}</a>
 	</footer>
 {/snippet}
 
